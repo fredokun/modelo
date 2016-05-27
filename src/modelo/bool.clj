@@ -34,3 +34,8 @@
 
 (example
  (t/type-check? bool 12) => false)
+
+
+
+(example
+ (t/type-parse 'bool) => bool)

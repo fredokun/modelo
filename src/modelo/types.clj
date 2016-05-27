@@ -12,13 +12,13 @@
     "Get the descriptive name of the type.")
 
   (type-uname [t]
-    "Get the descriptive name of the type in Mathematics-enabled unicode.")
+    "The descriptive name of the type in Mathematics-enabled unicode.")
 
   (type-tex-name [t]
-    "Get the tex/latex name of the type.")
+    "The tex/latex name of the type.")
 
   (type-describe [t]
-    "Get the description of the type.")
+    "The description of the type.")
 
   (type-check [t v]
     "Check if value `v` is of type `t`."))
@@ -29,6 +29,12 @@
   and `false` otherwise."
   [t v]
   (= (type-check t v) :yes))
+
+(def ^:private +types-registry+
+  (atom {:tag ::type-registry
+         :atom-types {}
+         :compound-types {}}))
+
 
 ;; (defrecord Int []
 ;;   Type
@@ -143,6 +149,8 @@
 
 ;; (example
 ;;  (type-check (pair bool int) 42) => [:no 42 "is not counted."])
+
+
 
 
 
