@@ -1,15 +1,15 @@
 
-(ns specl.subtypes
+(ns modelo.subtypes
   (:require [clj-by.example :refer [example do-for-example]]
-            [specl.types :as types :refer [type-check]])
-  (:import [specl.types.Type]))
+            [modelo.types :as types :refer [type-check]])
+  (:import [modelo.types.Type]))
 
 (def ^:private +examples-enabled+ true)
 
 (declare check-invariant)
 
 (defrecord Subtype [name uname tex-name describe type invariant]
-  specl.types.Type
+  modelo.types.Type
   (type-name [t] (:name t))
   (type-uname [t] (:uname t))
   (type-tex-name [t] (:tex-name t))

@@ -1,4 +1,4 @@
-(defproject specl "0.1.0-SNAPSHOT"
+(defproject modelo "0.1.0-SNAPSHOT"
   :description "When formal methods meet Clojure (and vice-versa)"
   :url "https://github.com/fredokun/specl"
   :license {:name "MIT License"

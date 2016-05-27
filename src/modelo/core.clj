@@ -1,4 +1,4 @@
-(ns specl.core)
+(ns modelo.core)
 
 (defn foo
   "I don't do a whole lot."

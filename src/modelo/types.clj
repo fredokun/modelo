@@ -1,12 +1,12 @@
 
-(ns specl.types
+(ns modelo.types
   (:refer-clojure :excluse [int])
   (:require [clj-by.example :refer [example do-for-example]]))
 
 (def ^:private +examples-enabled+ true)
 
 (defprotocol Type
-  "Basic API for Specl types."
+  "Basic API for Modelo types."
 
   (type-name [t]
     "Get the descriptive name of the type.")
