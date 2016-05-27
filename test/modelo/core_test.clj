@@ -1,4 +1,4 @@
-(ns specl.core-test
+(ns modelo.core-test
   (:require [clojure.test :refer :all]
             [specl.core :refer :all]))
 
