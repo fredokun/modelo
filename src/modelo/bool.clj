@@ -1,7 +1,8 @@
 
 (ns modelo.bool
   (:require [clj-by.example :refer [example]])
-  (:require [modelo.types :as t]))
+  (:require [modelo.types :as t])
+  (:require [modelo.expr :as e]))
 
 (def ^:private +examples-enabled+ true)
 
@@ -36,6 +37,31 @@
  (t/type-check? bool 12) => false)
 
 
+(defrecord True []
+  e/Expr
+  (unparse [_] 'true)
+  (check-type [_ t _]
+    (= t bool)))
+
+(defn mk-true
+  "Build the boolean constant `true`."
+  [] (->True))
 
 (example
- (t/type-parse 'bool) => bool)
+ (e/check-type (mk-true) bool nil)) => true
+
+(defrecord False []
+  e/Expr
+  (unparse [_] 'false)
+  (check-type [_ t _]
+    (= t bool)))
+
+(defn mk-false
+  "Build the boolean constant `false`."
+  [] (->False))
+
+(example
+ (e/check-type (mk-false) bool nil) => true)
+
+
+

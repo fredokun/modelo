@@ -25,19 +25,19 @@
     :yes
     [:no v msg]))
 
-(def nat (->Subtype "nat" "ℕ" "\\mathbb{N}"
-                    "natural integers 0, 1, 2, ..."
-                    types/int
-                    [#(>= % 0), "should be a positive integer"]))
+;; (def nat (->Subtype "nat" "ℕ" "\\mathbb{N}"
+;;                     "natural integers 0, 1, 2, ..."
+;;                     types/int
+;;                     [#(>= % 0), "should be a positive integer"]))
 
-(example
- (type-check nat 12) => :yes)
+;; (example
+;;  (type-check nat 12) => :yes)
 
-(example
- (type-check nat -12) => [:no -12 "should be a positive integer"])
+;; (example
+;;  (type-check nat -12) => [:no -12 "should be a positive integer"])
 
-(example
- (type-check nat true) => [:no true "is not an integer"])
+;; (example
+;;  (type-check nat true) => [:no true "is not an integer"])
 
 
 
