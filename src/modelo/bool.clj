@@ -1,7 +1,7 @@
 
 (ns modelo.bool
   (:require [clj-by.example :refer [example]])
-  (:require [modelo.types :as t])
+  (:require [modelo.type :as t])
   (:require [modelo.expr :as e]))
 
 (def ^:private +examples-enabled+ true)
