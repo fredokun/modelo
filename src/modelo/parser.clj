@@ -1,11 +1,19 @@
-(ns modelo.parser)
+(ns modelo.parser
+  (:require [clj-by.example :refer [example do-for-example]]))
+
+(def ^:private +examples-enabled+ true)
 
 (defn mk-parser
   "Create an empty parser."
   []
-  (atom {:const {}
-         :extra {}
-         :compound {}}))
+  {:const {}
+   :extra []
+   :compound {}})
+
+(do-for-example
+ (def ex-parser (atom (mk-parser))))
+
+(declare parse-extra)
 
 (defn parse
   "Parses an expression `e` with `parser`.
@@ -15,78 +23,163 @@
     - `[:yes <expr>]` if parse is successful
     - `[:no <info-map>]` in case of failure (no parser found)
     - `[:error <info-map>]` in case of error."
-  ([e parser] (if (seq e)
-                (if-let [sparser (get (:compound parser) (first e))]
-                  (sparser e parser)
-                  (reduce (fn [res lparser]
-                            (let [res' (lparser e parser)]
-                              (case (first res')
-                                :no res
-                                :yes (reduce res')
-                                :error (reduce res'))))
-                          [:no {:msg "Cannot parse expression" :expr e}]
-                          (:extra parser)))
+  ([e parser] (if (sequential? e)
+                (if (seq e)
+                  (if-let [sparser (get (:compound parser) (first e))]
+                    (sparser e parser)
+                    (parse-extra e parser))
+                  (parse-extra e parser))
                 ;; consts
                 (if-let [aparser (get (:const parser) e)]
                   (aparser e)
-                  [:error {:msg "No parser for const" :expr e}]))))
+                  [:no {:msg "No parselet for const" :expr e}]))))
 
-(defn register-const-parser!
-  "Registers in `atom` `parser` as a const parser for `const`."
-  [atom const parser]
-  (swap! atom (fn [p] (if (get (:const p) const)
-                        (throw (ex-info "Const parser already registered."
-                                        {:const const}))
-                        (update p :const
-                                (fn [ps] (assoc ps const parser)))))))
+(defn parse-extra [e parser]
+  (reduce (fn [res eparser]
+            (let [res' (eparser e parser)]
+              (case (first res')
+                :no res
+                :yes (reduced res')
+                :error (reduced res'))))
+          [:no {:msg "Cannot parse expression" :expr e}]
+          (:extra parser)))
 
-(defn unregister-const-parser!
-  "Unregisters in `atom` the parser for `const`."
-  [atom const]
-  (swap! atom (fn [p] (if (get (:const p) const)
-                        (update p :const
-                                (fn [ps] (dissoc ps const)))
-                        (throw (ex-info "No such const parser registered."
-                                        {:const const}))))))
+(defn check-parse
+  "Parses expression `e` with parser `parser`. 
+  Returns the parsed value or raises an exception in case of failure."
+  [e parser]
+  (let [res (parse e parser)]
+    (case (first res)
+      :yes (second res)
+      :no (throw (ex-info "No parselet found for expression." {:expr e :info (second res)}))
+      :error (throw (ex-info "Parse error" {:expr e :error (second res)})))))
 
-(defn clear-const-parsers!
-  "Unregister in `atom` all const parsers."
-  [atom]
-  (swap! atom #(assoc % :const {})))
+(defn register-const-parselet
+  "Registers in `parser` `parselet` for parsing `const`."
+  [parser const parselet]
+  (if (get (:const parser) const)
+    (throw (ex-info "Const parser already registered."
+                    {:const const}))
+    (update parser :const
+            (fn [ps] (assoc ps const parselet)))))
 
-(defn register-extra-parser!
-  "Registers in `atom` `parser` as a extra parser."
-  [atom parser]
-  (swap! atom (fn [p] (update p :extra #(conj % parser)))))
+(do-for-example
+ (swap! ex-parser (fn [parser] (register-const-parselet parser 'true (fn [_] [:yes true])))))
 
-(defn clear-extra-parsers!
-  "Unregister in `atom` all extra parsers."
-  [atom]
-  (swap! atom #(assoc % :extra {})))
+(example
+ (parse 'true @ex-parser) => [:yes true])
 
-(defn register-compound-parser!
-  "Registers in `atom` `parser` as a compound parser with first element `fst`."
-  [atom fst parser]
-  (swap! atom
-         (fn [p] (update p :compound #(if (get % fst)
-                                        (throw (ex-info "Compound parser already registered."
-                                                        {:first fst}))
-                                        (assoc % fst parser))))))
+(example
+ (parse 'false @ex-parser)
+ => [:no {:msg "No parselet for const", :expr 'false}])
 
-(defn unregister-compound-parser!
-  "Unregisters in `atom` the compound parser for `fst`."
-  [atom fst]
-  (swap! atom (fn [p] (if (get (:compound p) fst)
-                        (update p :compound
-                                (fn [ps] (dissoc ps fst)))
-                        (throw (ex-info "No such compound parser registered."
-                                        {:first fst}))))))
+(defn unregister-const-parselet
+  "Unregisters in `parser` the parselet for `const`."
+  [parser const]
+  (if (get (:const parser) const)
+    (update parser :const
+            (fn [ps] (dissoc ps const)))
+    (throw (ex-info "No such const parselet registered."
+                    {:const const}))))
 
+(example
+ (:const (unregister-const-parselet @ex-parser 'true)) => {})
 
-(defn clear-compound-parsers!
-  "Unregister in `atom` all compound parsers."
-  [atom]
-  (swap! atom #(assoc % :compound {})))
+(defn clear-const-parselets
+  "Unregister in `parser` all const parselets."
+  [parser] (assoc parser :const {}))
 
+(example
+ (:const (clear-const-parselets @ex-parser)) => {})
 
+(defn register-extra-parselet
+  "Registers in `parser` `parselet` as a extra parselet."
+  [parser parselet]
+  (update parser :extra #(conj % parselet)))
+
+(do-for-example
+ (swap! ex-parser
+        (fn [parser] (register-extra-parselet
+                      parser
+                      (fn [v _] (if (and (= (count v) 2)
+                                         (integer? (first v))
+                                         (keyword? (second v)))
+                                  [:yes v]
+                                  [:no {:msg "Not a good pair" :expr v}]))))))
+
+(example
+ (parse [12 :hello] @ex-parser) => [:yes [12 :hello]])
+
+(example
+ (parse [12 'hello] @ex-parser)
+ => [:no {:msg "Not a good pair", :expr [12 'hello]}])
+
+(defn clear-extra-parselets
+  "Unregister in `parser` all extra parserlets."
+  [parser]
+  (assoc parser :extra []))
+
+(defn register-compound-parselet
+  "Registers in `parser` `parselet` as a compound parselet with first element `fst`."
+  [parser fst parselet]
+  (update parser :compound
+          #(if (get % fst)
+             (throw (ex-info "Compound parselet already registered."
+                             {:first fst}))
+             (assoc % fst parselet))))
+
+(do-for-example
+ (swap! ex-parser
+        (fn [parser] (register-compound-parselet
+                      parser 'beep
+                      (fn [v p]
+                        (if (= (count v) 2)
+                          (let [res (parse (second v) p)]
+                            (if (= (first res) :yes)
+                              [:yes {:type :beep :child (second res)}]
+                              [:error (second res)]))
+                          [:error {:msg "Need exactly one argument for :beep."
+                                   :nb-args (dec (count v))}]))))))
+
+(example
+ (parse '(beep [42 :world]) @ex-parser)
+ => [:yes {:type :beep, :child [42 :world]}])
+
+(example
+ (parse '(beep 42) @ex-parser)
+ => [:error {:msg "No parser for const", :expr 42}])
+
+(example
+ (parse '(beep true 42) @ex-parser)
+ => [:error {:msg "Need exactly one argument for :beep.", :nb-args 2}])
+
+(defn unregister-compound-parselet
+  "Unregisters in `parser` the compound parselet for `fst`."
+  [parser fst]
+  (if (get (:compound parser) fst)
+    (update parser :compound
+            (fn [ps] (dissoc ps fst)))
+    (throw (ex-info "No such compound parselet registered."
+                    {:first fst}))))
+
+(example
+ (:compound (unregister-compound-parselet @ex-parser 'beep)) => {})
+
+(defn clear-compound-parselets
+  "Unregister in `parser` all compound parselets."
+  [parser] (assoc parser :compound {}))
+
+(defn clear-parselets
+  "Unregister all parselets in `parser`."
+  [parser]
+  (-> parser
+      (clear-const-parselets)
+      (clear-compound-parselets)
+      (clear-extra-parselets)))
+
+(do-for-example
+ (swap! ex-parser clear-parselets))
+
+(example
+ (= @ex-parser (mk-parser)) => true)
 
