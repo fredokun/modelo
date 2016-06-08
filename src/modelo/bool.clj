@@ -269,7 +269,6 @@
     [:error {:msg "Operator `imply` needs exactly 2 arguments." :nb-args (dec (count e))
              :expr e}]
     (let [hres (e/parse-expr (nth e 1))]
-      (println "  ==> hres = " hres)
       (if (not= (first hres) :yes)
         [:error (second hres)]
         (let [cres (e/parse-expr (nth e 2))]
@@ -280,6 +279,49 @@
 (defn register-imply-parselet! []
   (e/register-compound-parselet! 'imply parse-imply)
   (e/register-compound-parselet! '==> parse-imply))
+
+;;{
+;; # Equivalence
+;;}
+
+(defrecord Iff [hyp concl]
+  e/Expr
+  (unparse [expr] (list 'iff (e/unparse hyp) (e/unparse concl)))
+  (check-type [expr ty env]
+    (if (not= ty bool)
+      {:status :type-error :msg "equivalence returns a boolean"
+       :expected bool
+       :given ty}
+      (let [res1 (e/check-type (:hyp expr) bool env)]
+        (if (not= (:status res1) :ok)
+          res1
+          (e/check-type (:concl expr) bool env))))))
+
+(defn mk-iff
+  "Build a logical equivalence with operands `left` and `right`."
+  [left right] (->Iff left right))
+
+(example
+ (e/unparse (mk-iff (mk-true) (mk-false))) => '(iff true false))
+
+(example
+ (e/check-type (mk-iff (mk-true) (mk-false)) bool nil) => {:status :ok})
+
+(defn parse-iff [e _]
+  (if (not= (count e) 3) 
+    [:error {:msg "Operator `iff` needs exactly 2 arguments." :nb-args (dec (count e))
+             :expr e}]
+    (let [lres (e/parse-expr (nth e 1))]
+      (if (not= (first lres) :yes)
+        [:error (second lres)]
+        (let [rres (e/parse-expr (nth e 2))]
+          (if (not= (first rres) :yes)
+            [:error (second rres)]
+            [:yes (mk-iff (second lres) (second rres))]))))))
+
+(defn register-iff-parselet! []
+  (e/register-compound-parselet! 'iff parse-iff)
+  (e/register-compound-parselet! '<=> parse-iff))
 
 ;;{
 ;; # Parselets registration
@@ -294,5 +336,6 @@
   (register-and-parselet!)
   (register-or-parselet!)
   (register-imply-parselet!)
+  (register-iff-parselet!)
   )
 

@@ -1,5 +1,5 @@
 
-(ns modelo.types
+(ns modelo.type
   (:refer-clojure :excluse [int])
   (:require [clj-by.example :refer [example do-for-example]]))
 
@@ -21,8 +21,10 @@
     "The description of the type.")
 
   (type-check [t v]
-    "Check if value `v` is of type `t`."))
+    "Check if value `v` is of type `t`.")
 
+  (type-unparse [t]
+    "Produces a repl-friendly representation of the type `t`."))
 
 (defn type-check?
   "Returns `true` if value `v` is of type `t`,
