@@ -32,7 +32,7 @@
                 ;; consts
                 (if-let [aparser (get (:const parser) e)]
                   (aparser e)
-                  [:no {:msg "No parselet for const" :expr e}]))))
+                  (parse-extra e parser)))))
 
 (defn parse-extra [e parser]
   (reduce (fn [res eparser]
@@ -71,7 +71,7 @@
 
 (example
  (parse 'false @ex-parser)
- => [:no {:msg "No parselet for const", :expr 'false}])
+ => [:no {:msg "Cannot parse expression", :expr false}])
 
 (defn unregister-const-parselet
   "Unregisters in `parser` the parselet for `const`."
@@ -101,7 +101,8 @@
  (swap! ex-parser
         (fn [parser] (register-extra-parselet
                       parser
-                      (fn [v _] (if (and (= (count v) 2)
+                      (fn [v _] (if (and (counted? v)
+                                         (= (count v) 2)
                                          (integer? (first v))
                                          (keyword? (second v)))
                                   [:yes v]
@@ -112,7 +113,7 @@
 
 (example
  (parse [12 'hello] @ex-parser)
- => [:no {:msg "Not a good pair", :expr [12 'hello]}])
+ => [:no {:msg "Cannot parse expression", :expr [12 'hello]}])
 
 (defn clear-extra-parselets
   "Unregister in `parser` all extra parserlets."
@@ -133,7 +134,7 @@
         (fn [parser] (register-compound-parselet
                       parser 'beep
                       (fn [v p]
-                        (if (= (count v) 2)
+                        (if (and (counted? v) (= (count v) 2))
                           (let [res (parse (second v) p)]
                             (if (= (first res) :yes)
                               [:yes {:type :beep :child (second res)}]
@@ -147,7 +148,7 @@
 
 (example
  (parse '(beep 42) @ex-parser)
- => [:error {:msg "No parser for const", :expr 42}])
+ => [:error {:msg "Cannot parse expression", :expr 42}])
 
 (example
  (parse '(beep true 42) @ex-parser)

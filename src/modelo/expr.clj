@@ -21,47 +21,65 @@ informations about the errors can be returned in the map.")
 
   )
 
-(def ^:private +expr-parser+ (p/mk-parser))
+(def ^:private +expr-parser+ (atom (p/mk-parser)))
 
 (defn parse-expr
-  "Parses an expression `e`. Returns a pair of either
+  "Parses expression `e`. Returns a pair of either
 
     - `[:yes <expr>]` if parse is successful
     - `[:no <info-map>]` in case of failure (no parser found)
     - `[:error <info-map>]` in case of error."
   [e] (p/parse e @+expr-parser+))
 
-(defn register-const-parser!
-  "Registers `parser` as a const parser for `const`."
-  [const parser] (p/register-const-parser! +expr-parser+ const parser))
+(defn check-parse-expr
+  "Parses expression `e`. Returns the parsed value or
+raises an exception in case of failure."
+  [e] (p/check-parse e @+expr-parser+))
 
-(defn unregister-const-parser!
-  "Unregisters the parser for `const`."
-  [const] (p/unregister-const-parser! +expr-parser+ const))
+(defn register-const-parselet!
+  "Registers `parselet` as a const parselet for `const`."
+  [const parselet]
+  (swap! +expr-parser+ #(p/register-const-parselet % const parselet)))
 
-(defn clear-const-parsers!
-  "Unregister all const parsers."
-  [] (p/clear-const-parsers! +expr-parser+))
+(defn unregister-const-parselet!
+  "Unregisters the parselet for `const`."
+  [const]
+  (swap! +expr-parser+ #(p/unregister-const-parselet % const)))
 
-(defn register-extra-parser!
-  "Registers `parser` as a extra parser."
-  [parser] (p/register-extra-parser! +expr-parser+ parser))
+(defn clear-const-parserlets!
+  "Unregister all const parselets."
+  []
+  (swap! +expr-parser+ p/clear-const-parselets))
 
-(defn clear-extra-parsers!
-  "Unregister all extra parsers."
-  [] (p/clear-extra-parsers! +expr-parser+))
+(defn register-extra-parselet!
+  "Registers `parselet` as a extra parselet."
+  [parselet]
+  (swap! +expr-parser+ #(p/register-extra-parselet % parselet)))
 
-(defn register-compound-parser!
-  "Registers `parser` as a compound parser with first element `fst`."
-  [fst parser] (p/register-compound-parser! +expr-parser+ fst parser))
+(defn clear-extra-parselets!
+  "Unregister all extra parselets."
+  []
+  (swap! +expr-parser+ p/clear-extra-parselets))
 
-(defn unregister-compound-parser!
-  "Unregisters the compound parser for `fst`."
-  [fst] (p/unregister-compound-parser! +expr-parser+ fst))
+(defn register-compound-parselet!
+  "Registers `parselet` as a compound parselet with first element `fst`."
+  [fst parser]
+  (swap! +expr-parser+ #(p/register-compound-parselet % fst parser)))
 
-(defn clear-compound-parsers!
-  "Unregister all compound parsers."
-  [] (p/clear-compound-parsers! +expr-parser+))
+(defn unregister-compound-parselet!
+  "Unregisters the compound parselet for `fst`."
+  [fst]
+  (swap! +expr-parser+ #(p/unregister-compound-parselet % fst)))
+
+(defn clear-compound-parselets!
+  "Unregister all compound parselets."
+  []
+  (swap! +expr-parser+ p/clear-compound-parselets))
+
+(defn clear-parselets!
+  "Unregister all parselets."
+  []
+  (swap! +expr-parser+ p/clear-parselets))
 
 (defn check-type-exprs
   "Check that all the elements of the sequence `exprs` have the same
@@ -99,13 +117,14 @@ informations about the errors can be returned in the map.")
 (example
  (unparse (mk-var 'x :free)) => 'x)
 
-(defn parse-var [e]
+(defn parse-var [e _]
   (if (symbol? e)
     [:yes (mk-var e :unspecified)]
     [:no {:msg "not a variable" :expr e}]))
 
-(defn register-var-parser!
-  "Register the parser for variables."
-  [] (register-extra-parser! parse-var))
+(defn register-var-parselet!
+  "Register the parselet for variables."
+  [] (register-extra-parselet! parse-var))
+
 
 
