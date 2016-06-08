@@ -62,6 +62,7 @@
   Returns the parsed value or raises an exception in case of failure."
   [e parser]
   (let [res (parse e parser)]
+    ;; (println "[check-parse] res=" res)
     (case (first res)
       :yes (second res)
       :no (throw (ex-info "No parselet found for expression." {:expr e :info (second res)}))

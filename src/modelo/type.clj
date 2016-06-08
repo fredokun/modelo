@@ -1,7 +1,8 @@
 
 (ns modelo.type
-  (:refer-clojure :excluse [int])
-  (:require [clj-by.example :refer [example do-for-example]]))
+  (:require [clj-by.example :refer [example do-for-example]])
+  (:require [modelo.parser :as p])
+  )
 
 (def ^:private +examples-enabled+ true)
 
@@ -32,10 +33,74 @@
   [t v]
   (= (type-check t v) :yes))
 
-(def ^:private +types-registry+
-  (atom {:tag ::type-registry
-         :atom-types {}
-         :compound-types {}}))
+
+(def ^:private +type-parser+ (atom (p/mk-parser)))
+
+(defn parse-type
+  "Parses type expression `e`. Returns a pair of either
+
+    - `[:yes <result>]` if parse is successful
+    - `[:no <info-map>]` in case of failure (no parser found)
+    - `[:error <info-map>]` in case of error."
+  [e] (p/parse e @+type-parser+))
+
+(defn check-parse-type
+  "Parses type expression `e`. Returns the parsed value or
+raises an exception in case of failure."
+  [e] (p/check-parse e @+type-parser+))
+
+(defn parse-seq
+  "Parses the sequence `s` of type expressions.
+  Returns `[:yes r]` with `r` a sequence of parsed values in case of succes,
+  or the first parse error encountered."
+  [s] (p/parse-seq s @+type-parser+))
+
+(defn register-const-parselet!
+  "Registers `parselet` as a const parselet for `const`."
+  [const parselet]
+  (swap! +type-parser+ #(p/register-const-parselet % const parselet)))
+
+(defn unregister-const-parselet!
+  "Unregisters the parselet for `const`."
+  [const]
+  (swap! +type-parser+ #(p/unregister-const-parselet % const)))
+
+(defn clear-const-parserlets!
+  "Unregister all const parselets."
+  []
+  (swap! +type-parser+ p/clear-const-parselets))
+
+(defn register-extra-parselet!
+  "Registers `parselet` as a extra parselet."
+  [parselet]
+  (swap! +type-parser+ #(p/register-extra-parselet % parselet)))
+
+(defn clear-extra-parselets!
+  "Unregister all extra parselets."
+  []
+  (swap! +type-parser+ p/clear-extra-parselets))
+
+(defn register-compound-parselet!
+  "Registers `parselet` as a compound parselet with first element `fst`."
+  [fst parser]
+  (swap! +type-parser+ #(p/register-compound-parselet % fst parser)))
+
+(defn unregister-compound-parselet!
+  "Unregisters the compound parselet for `fst`."
+  [fst]
+  (swap! +type-parser+ #(p/unregister-compound-parselet % fst)))
+
+(defn clear-compound-parselets!
+  "Unregister all compound parselets."
+  []
+  (swap! +type-parser+ p/clear-compound-parselets))
+
+(defn clear-parselets!
+  "Unregister all parselets."
+  []
+  (swap! +type-parser+ p/clear-parselets))
+
+
 
 
 ;; (defrecord Int []

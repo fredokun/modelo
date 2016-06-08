@@ -132,5 +132,7 @@ raises an exception in case of failure."
   "Register the parselet for variables."
   [] (register-extra-parselet! parse-var))
 
+(defn register-parselets! []
+  (register-var-parselet!))
 
 

@@ -20,7 +20,8 @@
     (if (or (= v true)
             (= v false))
       :yes
-      [:no v " is not a boolean true or false." v])))
+      [:no v " is not a boolean true or false." v]))
+  (type-unparse [_] 'bool))
 
 (def bool (->Bool))
 
@@ -39,6 +40,12 @@
 
 (example
  (t/type-check? bool 12) => false)
+
+(defn parse-bool [_]
+  [:yes bool])
+
+(defn register-bool-parselet! []
+  (t/register-const-parselet! 'bool parse-bool))
 
 ;;{
 ;; # Constant true
@@ -328,8 +335,9 @@
 ;;}
 
 (defn register-parselets!
-  "Install the boolean expressions parselets."
+  "Register the boolean expressions parselets."
   []
+  (register-bool-parselet!)
   (register-true-parselet!)
   (register-false-parselet!)
   (register-not-parselet!)
@@ -338,4 +346,18 @@
   (register-imply-parselet!)
   (register-iff-parselet!)
   )
+
+(defn clear-parselets!
+  "Unregister the boolean expression parselets."
+  []
+  (t/unregister-const-parselet! 'bool)
+  (e/unregister-const-parselet! 'true)
+  (e/unregister-const-parselet! 'false)
+  (e/unregister-compound-parselet! 'not)
+  (e/unregister-compound-parselet! 'and)
+  (e/unregister-compound-parselet! 'or)
+  (e/unregister-compound-parselet! 'imply)
+  (e/unregister-compound-parselet! '==>)
+  (e/unregister-compound-parselet! 'iff)
+  (e/unregister-compound-parselet! '<=>))
 
