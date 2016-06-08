@@ -2,8 +2,6 @@
   (:require [modelo.expr :as e]
             [clojure.test :as t :refer [use-fixtures deftest is]]))
 
-;; (t/deftest blabla)
-
 (defn parser-fixture [f]
   (e/register-var-parselet!)
   (f)

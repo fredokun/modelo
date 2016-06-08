@@ -44,6 +44,19 @@
           [:no {:msg "Cannot parse expression" :expr e}]
           (:extra parser)))
 
+(defn parse-seq
+  "Parses a sequence `s` of expressions with `parser`.
+  Returns `[:yes r]` with `r` a sequence of parsed values in case of succes,
+  or the first parse error encountered."
+  [s parser]
+  (loop [s s, res []]
+    (if (seq s)
+      (let [r (parse (first s) parser)]
+        (if (= (first r) :yes)
+          (recur (rest s) (conj res (second r)))
+          r))
+      [:yes res])))
+
 (defn check-parse
   "Parses expression `e` with parser `parser`. 
   Returns the parsed value or raises an exception in case of failure."

@@ -36,6 +36,12 @@ informations about the errors can be returned in the map.")
 raises an exception in case of failure."
   [e] (p/check-parse e @+expr-parser+))
 
+(defn parse-seq
+  "Parses the sequence `s` of expressions.
+  Returns `[:yes r]` with `r` a sequence of parsed values in case of succes,
+  or the first parse error encountered."
+  [s] (p/parse-seq s @+expr-parser+))
+
 (defn register-const-parselet!
   "Registers `parselet` as a const parselet for `const`."
   [const parselet]

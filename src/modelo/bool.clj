@@ -6,6 +6,10 @@
 
 (def ^:private +examples-enabled+ true)
 
+;;{
+;; # Bool type
+;;}
+
 (defrecord Bool []
   t/Type
   (type-name [_] "bool")
@@ -36,6 +40,10 @@
 (example
  (t/type-check? bool 12) => false)
 
+;;{
+;; # Constant true
+;;}
+
 (defrecord True []
   e/Expr
   (unparse [_] 'true)
@@ -50,6 +58,16 @@
 
 (example
  (e/check-type (mk-true) bool nil) => {:status :ok})
+
+(defn parse-true [_]
+  [:yes (mk-true)])
+
+(defn register-true-parselet! []
+  (e/register-const-parselet! true parse-true))
+
+;;{
+;; # Constant false
+;;}
 
 (defrecord False []
   e/Expr
@@ -70,6 +88,16 @@
  (e/check-type (mk-false) :int nil) =>
  {:status :type-error, :msg "bool expected",
   :expected #modelo.bool.Bool{}, :given :int})
+
+(defn parse-false [_]
+  [:yes (mk-false)])
+
+(defn register-false-parselet! []
+  (e/register-const-parselet! false parse-false))
+
+;;{
+;; # Negation
+;;}
 
 (defrecord Not [arg]
   e/Expr
@@ -106,6 +134,22 @@
   :msg "no such variable",
   :variable #modelo.expr.Var{:name x, :kind :free}})
 
+(defn parse-not [e _]
+  (if (not= (count e) 2)
+    [:error {:msg "Wrong arity for `not`." :arity-expect 2 :arity-given (dec (count e))
+             :expr e}]
+    (let [res (e/parse-expr (second e))]
+      (if (= (first res) :yes)
+        [:yes (mk-not (second res))]
+        [:error (second res)]))))
+
+(defn register-not-parselet! []
+  (e/register-compound-parselet! 'not parse-not))
+
+;;{
+;; # Conjunction
+;;}
+
 (defrecord And [args]
   e/Expr
   (unparse [expr] (conj (into '() (map e/unparse (:args expr))) 'and))
@@ -134,6 +178,23 @@
  =>
  {:status :type-error, :msg "and operator returns a boolean",
   :expected #modelo.bool.Bool{}, :given :int})
+
+(defn parse-and [e _]
+  (if (< (count e) 3) 
+    [:error {:msg "Operator `and` needs at least 2 arguments." :nb-args (dec (count e))
+             :expr e}]
+    (let [res (e/parse-seq (rest e))]
+      ;;(println "[parse-and] res = " res)
+      (if (= (first res) :yes)
+        [:yes (apply mk-and (second res))]
+        [:error (second res)]))))
+
+(defn register-and-parselet! []
+  (e/register-compound-parselet! 'and parse-and))
+
+;;{
+;; # Disjunction
+;;}
 
 (defrecord Or [args]
   e/Expr
@@ -164,6 +225,22 @@
  {:status :type-error, :msg "or operator returns a boolean",
   :expected #modelo.bool.Bool{}, :given :int})
 
+(defn parse-or [e _]
+  (if (< (count e) 3) 
+    [:error {:msg "Operator `or` needs at least 2 arguments." :nb-args (dec (count e))
+             :expr e}]
+    (let [res (e/parse-seq (rest e))]
+      (if (= (first res) :yes)
+        [:yes (apply mk-or (second res))]
+        [:error (second res)]))))
+
+(defn register-or-parselet! []
+  (e/register-compound-parselet! 'or parse-or))
+
+;;{
+;; # Implication
+;;}
+
 (defrecord Imply [hyp concl]
   e/Expr
   (unparse [expr] (list 'imply (e/unparse hyp) (e/unparse concl)))
@@ -186,4 +263,36 @@
 
 (example
  (e/check-type (mk-imply (mk-true) (mk-false)) bool nil) => {:status :ok})
+
+(defn parse-imply [e _]
+  (if (not= (count e) 3) 
+    [:error {:msg "Operator `imply` needs exactly 2 arguments." :nb-args (dec (count e))
+             :expr e}]
+    (let [hres (e/parse-expr (nth e 1))]
+      (println "  ==> hres = " hres)
+      (if (not= (first hres) :yes)
+        [:error (second hres)]
+        (let [cres (e/parse-expr (nth e 2))]
+          (if (not= (first cres) :yes)
+            [:error (second cres)]
+            [:yes (mk-imply (second hres) (second cres))]))))))
+
+(defn register-imply-parselet! []
+  (e/register-compound-parselet! 'imply parse-imply)
+  (e/register-compound-parselet! '==> parse-imply))
+
+;;{
+;; # Parselets registration
+;;}
+
+(defn register-parselets!
+  "Install the boolean expressions parselets."
+  []
+  (register-true-parselet!)
+  (register-false-parselet!)
+  (register-not-parselet!)
+  (register-and-parselet!)
+  (register-or-parselet!)
+  (register-imply-parselet!)
+  )
 
